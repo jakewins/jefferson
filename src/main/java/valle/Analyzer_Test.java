@@ -100,6 +100,6 @@ public class Analyzer_Test
                         new String[]{},
                         new String[]{"Shull 16", "Proudie", "Roden", "Muntzel", "Pietzman","Solon", "Ross", "Carter", "Hicks", "Plocher", "Roeber"},
                         new String[]{} );
-        assert vote == expectedVote : String.format("Vote does not match expected. Diff: %n  %s%n", vote.diff(expectedVote).replace( "\n", "\n  " ));
+        assert vote.equals(expectedVote) : String.format("Vote does not match expected. Diff: %n  %s%n", vote.diff(expectedVote).replace( "\n", "\n  " ));
     }
 }

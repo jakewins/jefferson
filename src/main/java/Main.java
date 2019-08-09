@@ -56,7 +56,7 @@ public class Main
             case AYES:
                 total++;
                 if(event.vote().noes.size() > 30) {
-                    System.out.printf("'%s',y,%d,%d,%s,%d%n", action, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
+                    System.out.printf("\"%s\",y,%d,%d,%s,%d%n", action, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
                 }
                 if(event.vote().noes.size() < event.vote().ayes.size()) {
                     withMajority++;
@@ -65,7 +65,7 @@ public class Main
             case NOES:
                 total++;
                 if(event.vote().ayes.size() > 30) {
-                    System.out.printf("'%s',n,%d,%d,%s,%d%n", action, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
+                    System.out.printf("\"%s\",n,%d,%d,%s,%d%n", action, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
                 }
                 if(event.vote().noes.size() > event.vote().ayes.size()) {
                     withMajority++;

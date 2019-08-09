@@ -712,32 +712,20 @@ public class Analyzer
     }
 
     private static String[] parseVoteBlock(String line) {
-        String[] reps = new String[]{"(?:Mr. )?(?:De )?[A-Z][a-z’'-]+(?: Jr.)?(?: [XVI]+(?= ))?(?: \\d+)?"};
-        for ( int i = 0; i < reps.length; i++ )
+        List<String> out = new ArrayList<>();
+        String[] parts = line.split( " {2}" );
+        for ( String part : parts )
         {
-            reps[i] = String.format("(?:%s)", reps[i].replace( ".", "\\." ));
-        }
-        String repsBlock = String.join( "|", reps );
-        String pattern = String.format( "^\\s*(%s)(.*)", repsBlock );
-        Pattern repsPattern = Pattern.compile( pattern );
-
-        ArrayList<String> out = new ArrayList<>();
-        Matcher matcher = repsPattern.matcher( line );
-        while(matcher.matches()) {
-            out.add(matcher.group( 1 ));
-            line = matcher.group( 2 );
-            if(line.isBlank()) {
-                break;
+            if(part.isBlank()) {
+                continue;
             }
-            matcher = repsPattern.matcher( line );
-        }
-
-
-        if(!line.isBlank())
-        {
-            System.err.println(out);
-            System.err.printf("L: '%s'%n", line);
-            throw new RuntimeException( "!!" );
+            part = part.trim();
+            if(!part.toLowerCase().matches( "[a-z’'.-]+( [a-z0-9’'.-]+)*" )) {
+                System.err.println(out);
+                System.err.printf("L: '%s'%n", line);
+                throw new RuntimeException( "!!" );
+            }
+            out.add( part );
         }
         return out.toArray( new String[0] );
     }
