@@ -125,17 +125,51 @@ public class Analyzer
         }
     }
 
-    public interface Event {
+    public static class Motion {
+
+        public enum Type {
+            // The current main thing the assembly is considering
+            MAIN,
+            // A sub-motion relating directly to the main motion at hand, like an amendment,
+            // postponing or a motion to the previous question, aka lets vote right now
+            SUBSIDIARY,
+            // A motion not relating to the main motion that takes precedence, like a motion to adjourn
+            PRIVILEGED,
+            // Random other motions, like appeals to the chair, questions about voting etc
+            INCIDENTAL,
+            // We were not able to figure out what type of motion took place
+            UNKNOWN
+        }
+
+        public final Motion.Type type;
+
+        public final String proposal;
+        // If this is a motion about another motion - like a motion to amend a bill - this
+        // is the motion this motion is talking about. So if this motion is to adopt an amendment,
+        // then the thing being amended is pointed to here.
+        public final Motion relatesTo;
+
+        public Motion( Motion.Type type, String proposal, Motion relatesTo )
+        {
+            this.type = type;
+            this.proposal = proposal;
+            this.relatesTo = relatesTo;
+        }
+    }
+
+    public interface Action
+    {
         Vote vote();
-        String action();
+        Motion motion();
         default Source source() { return null; }
     }
 
-    public static class SourcedEvent implements Event {
-        private final Event delegate;
+    public static class SourcedAction implements Action
+    {
+        private final Action delegate;
         private final Source source;
 
-        public SourcedEvent(Event delegate, Source source) {
+        public SourcedAction( Action delegate, Source source) {
             this.delegate = delegate;
             this.source = source;
         }
@@ -147,9 +181,9 @@ public class Analyzer
         }
 
         @Override
-        public String action()
+        public Motion motion()
         {
-            return delegate.action();
+            return delegate.motion();
         }
 
         @Override
@@ -165,22 +199,23 @@ public class Analyzer
         }
     }
 
-    public static class CommitteeVote implements Event {
+    public static class CommitteeVote implements Action
+    {
         public final String committee;
-        public final String action;
+        public final Motion motion;
         public final Vote vote;
 
-        public CommitteeVote( Analyzer ctx )
+        public CommitteeVote( Analyzer ctx, Motion motion )
         {
             this.committee = ctx.activeCommittee;
-            this.action = ctx.action;
+            this.motion = motion;
             this.vote = new Vote( ctx );
         }
 
         @Override
         public String toString()
         {
-            return "CommitteeVote{" + "committee='" + committee + '\'' + ", action='" + action +
+            return "CommitteeVote{" + "committee='" + committee + '\'' + ", motion='" + motion +
                     '\'' + ", vote=" + vote + '}';
         }
 
@@ -191,26 +226,27 @@ public class Analyzer
         }
 
         @Override
-        public String action()
+        public Motion motion()
         {
-            return action;
+            return motion;
         }
     }
 
-    public static class HouseVote implements Event {
-        public final String action;
+    public static class HouseVote implements Action
+    {
+        public final Motion motion;
         public final Vote vote;
 
-        public HouseVote( Analyzer ctx )
+        public HouseVote( Analyzer ctx, Motion motion )
         {
-            this.action = ctx.action;
+            this.motion = motion;
             this.vote = new Vote( ctx );
         }
 
         @Override
         public String toString()
         {
-            return "HouseVote{" + "action='" + action + '\'' + ", vote=" + vote + '}';
+            return "HouseVote{" + "motion='" + motion + '\'' + ", vote=" + vote + '}';
         }
 
         @Override
@@ -220,9 +256,9 @@ public class Analyzer
         }
 
         @Override
-        public String action()
+        public Motion motion()
         {
-            return action;
+            return motion;
         }
     }
 
@@ -419,7 +455,7 @@ public class Analyzer
             @Override
             public State analyze( Analyzer ctx, String line )
             {
-                ctx.addEvent( new HouseVote( ctx ) );
+                ctx.addEvent( new HouseVote( ctx, new Motion( Motion.Type.UNKNOWN, "..", null ) ) );
                 ctx.clearVoteState();
                 ctx.action = null;
                 ctx.voteExpected = false;
@@ -491,7 +527,7 @@ public class Analyzer
                     // a committee report.
                     if(ctx.currentVoteGroup == VoteGroup.ABSENT || line.startsWith( "Date:" ) || line.startsWith( "/s/" ))
                     {
-                        ctx.addEvent( new CommitteeVote( ctx ) );
+                        ctx.addEvent( new CommitteeVote( ctx, new Motion( Motion.Type.UNKNOWN, "..", null ) ) );
                         ctx.clearVoteState();
                         ctx.action = null;
                         ctx.voteExpected = false;
@@ -657,7 +693,7 @@ public class Analyzer
     private String source;
     private int lineNo;
 
-    private List<Event> out;
+    private List<Action> out;
     private String action;
     private String activeCommittee;
     private String[] ayes;
@@ -676,7 +712,7 @@ public class Analyzer
     // Set if we expect a vote block coming
     private boolean voteExpected;
 
-    public List<Event> analyze( String url, Iterable<String> inputLines ) {
+    public List<Action> analyze( String url, Iterable<String> inputLines ) {
         this.source = url;
         this.out = new ArrayList<>();
         this.state = State.SEEKING;
@@ -707,8 +743,8 @@ public class Analyzer
         vacancies = null;
     }
 
-    private void addEvent(Event ev) {
-        out.add( new SourcedEvent( ev, new Source( source, lineNo ) ) );
+    private void addEvent( Action ev) {
+        out.add( new SourcedAction( ev, new Source( source, lineNo ) ) );
     }
 
     private static String[] parseVoteBlock(String line) {

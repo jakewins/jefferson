@@ -43,7 +43,7 @@ public class Analyzer_Test
     }
 
     public void testParseVoteBlock() {
-        List<Analyzer.Event> events =
+        List<Analyzer.Action> actions =
                 new Analyzer().analyze( "http://example.com", Arrays.asList( ("\n" +
                         " On motion of Representative Eggleston, HCS HB 548, as amended, was ordered \n" +
                         "perfected and printed by the following vote, the ayes and noes having been demanded pursuant \n" +
@@ -89,10 +89,11 @@ public class Analyzer_Test
                         "VACANCIES: 002  \n" +
                         "1446 Journal of the House ").split( "\n" ) ) );
 
-        assert events.size() == 1: String.format("There should be one event, a vote, found %s", events);
+        assert actions.size() == 1: String.format("There should be one event, a vote, found %s",
+                actions );
 
-        Analyzer.Event event = events.get( 0 );
-        Analyzer.Vote vote = event.vote();
+        Analyzer.Action action = actions.get( 0 );
+        Analyzer.Vote vote = action.vote();
         Analyzer.Vote expectedVote =
                 new Analyzer.Vote(
                         new String[]{"Allred", "Anderson", "Bailey", "Baker", "Basye", "Billington", "Black 137", "Bondon", "Bromley", "Busick", "Chipman", "Christofanelli", "Coleman 32", "Coleman 97", "Deaton", "DeGroot", "Dinkins", "Dohrman", "Eggleston", "Eslinger", "Falkner III", "Fitzwater", "Francis", "Gregory", "Grier", "Griesheimer", "Griffith", "Haffner", "Hannegan", "Hansen", "Helms", "Henderson", "Hill", "Hovis", "Hudson", "Kelly 141", "Knight", "Kolkmeyer", "Lovasco", "Lynch", "Mayhew", "Messenger", "Miller", "Morris 140", "Morse 151", "O'Donnell", "Patterson", "Pike", "Pollitt 52", "Pollock 123", "Porter", "Toalson Reisch", "Remole", "Richey", "Riggs", "Roberts 161", "Rone", "Ruth", "Schnelting", "Schroer", "Sharpe", "Shaul 113", "Shawan", "Simmons", "Smith", "Sommer", "Spencer", "Stacy", "Tate", "Taylor", "Trent", "Veit", "Vescovo", "Walsh", "Wiemann", "Wilson", "Wright", "Mr. Speaker"},
@@ -101,5 +102,25 @@ public class Analyzer_Test
                         new String[]{"Shull 16", "Proudie", "Roden", "Muntzel", "Pietzman","Solon", "Ross", "Carter", "Hicks", "Plocher", "Roeber"},
                         new String[]{} );
         assert vote.equals(expectedVote) : String.format("Vote does not match expected. Diff: %n  %s%n", vote.diff(expectedVote).replace( "\n", "\n  " ));
+    }
+
+    public void testParseMotionOrder() {
+        List<Analyzer.Action> actions =
+                new Analyzer().analyze( "http://example.com", Arrays.asList( ("\n" +
+                        " On motion of Representative Eggleston, HCS HB 548, as amended, was ordered \n" +
+                        "perfected and printed by the following vote, the ayes and noes having been demanded pursuant \n" +
+                        "to Article III, Section 26 of the Constitution: \n" + " \n" +
+                        "AYES: 000  \n" +
+                        " \n" +
+                        "NOES: 000  \n" +
+                        "\n" +
+                        "VACANCIES: 002  \n" +
+                        "1446 Journal of the House ").split( "\n" ) ) );
+
+        assert actions.size() == 1: String.format("There should be one event, a vote, found %s",
+                actions );
+
+        Analyzer.Action action = actions.get( 0 );
+
     }
 }
