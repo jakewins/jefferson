@@ -1,10 +1,13 @@
 package valle;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class Analyzer_Test
 {
@@ -104,23 +107,27 @@ public class Analyzer_Test
         assert vote.equals(expectedVote) : String.format("Vote does not match expected. Diff: %n  %s%n", vote.diff(expectedVote).replace( "\n", "\n  " ));
     }
 
-    public void testParseMotionOrder() {
+    public void testParseMotionOrder() throws Exception {
         List<Analyzer.Action> actions =
-                new Analyzer().analyze( "http://example.com", Arrays.asList( ("\n" +
-                        " On motion of Representative Eggleston, HCS HB 548, as amended, was ordered \n" +
-                        "perfected and printed by the following vote, the ayes and noes having been demanded pursuant \n" +
-                        "to Article III, Section 26 of the Constitution: \n" + " \n" +
-                        "AYES: 000  \n" +
-                        " \n" +
-                        "NOES: 000  \n" +
-                        "\n" +
-                        "VACANCIES: 002  \n" +
-                        "1446 Journal of the House ").split( "\n" ) ) );
+                new Analyzer().analyze( "http://example.com", loadJournal( "HB10_taken_up_amended_and_laid_over.txt" ) );
 
         assert actions.size() == 1: String.format("There should be one event, a vote, found %s",
                 actions );
 
         Analyzer.Action action = actions.get( 0 );
 
+    }
+
+    private List<String> loadJournal(String name) throws IOException {
+        try(InputStream in = getClass().getResourceAsStream( String.format( "/testdata/%s", name ) )) {
+            if(in == null) {
+                throw new AssertionError( String.format("Can't find %s", name) );
+            }
+            Scanner scanner = new Scanner( in ).useDelimiter( "\\A" );
+            if(!scanner.hasNext()) {
+                throw new AssertionError( String.format("%s is empty?", name) );
+            }
+            return Arrays.asList( scanner.next().split( "\n" ) );
+        }
     }
 }

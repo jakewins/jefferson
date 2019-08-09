@@ -155,6 +155,35 @@ public class Analyzer
             this.proposal = proposal;
             this.relatesTo = relatesTo;
         }
+
+        @Override
+        public String toString()
+        {
+            return "Motion{" + "type=" + type + ", proposal='" + proposal + '\'' + ", relatesTo=" +
+                    relatesTo + '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Motion motion = (Motion) o;
+            return type == motion.type && proposal.equals( motion.proposal ) &&
+                    Objects.equals( relatesTo, motion.relatesTo );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( type, proposal, relatesTo );
+        }
     }
 
     public interface Action
@@ -869,12 +898,4 @@ class Patterns {
     static Pattern statutes = Pattern.compile( ".*((\\d+.\\d+), RSMo).*" );
 
     static Pattern header = Pattern.compile("(\\s*(\\d+)\\s*Journal of the House.*)|([a-zA-Z-]+ Day–[a-zA-Z]+, [a-zA-Z]+ \\d+, \\d+\\s*\\d+\\s*)");
-
-
-    // Need a better way to deal with this; probably should keep a list of last names instead, so many human errors here.
-    // Basye  Evans 99  Green  Hicks  McDaniel
-    // Pierson Jr.  Roden  Roeber  Rone  Shaul 113
-    // Arthur  Bernskoetter Brown  Burlison  Cierpiot
-    // Stevens 46 Unsicker  Walker  Washington  Windham
-    static Pattern longFormVoteList = Pattern.compile( "([a-z.'-]+( [a-z.'-]+)?( \\d+)?)+( {2,3}([a-z.'-]+( [a-z.'-]+)?( \\d+)?)+)*\\s*", Pattern.CASE_INSENSITIVE );
 }
