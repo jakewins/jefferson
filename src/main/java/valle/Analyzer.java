@@ -127,7 +127,7 @@ public class Analyzer
 
     public static class Motion {
 
-        public enum Type {
+        public enum Classification {
             // The current main thing the assembly is considering
             MAIN,
             // A sub-motion relating directly to the main motion at hand, like an amendment,
@@ -141,7 +141,22 @@ public class Analyzer
             UNKNOWN
         }
 
-        public final Motion.Type type;
+        public enum Type {
+            MAIN_MOTION( Classification.MAIN ),
+            AMEND( Classification.SUBSIDIARY ),
+            ADOPT( Classification.SUBSIDIARY ),
+            MISC( Classification.SUBSIDIARY ),
+            END_DEBATE( Classification.SUBSIDIARY ),
+            ;
+            public final Classification classification;
+
+            Type( Classification classification )
+            {
+                this.classification = classification;
+            }
+        }
+
+        public final Type type;
 
         public final String proposal;
         // If this is a motion about another motion - like a motion to amend a bill - this
@@ -149,7 +164,7 @@ public class Analyzer
         // then the thing being amended is pointed to here.
         public final Motion relatesTo;
 
-        public Motion( Motion.Type type, String proposal, Motion relatesTo )
+        public Motion( Type type, String proposal, Motion relatesTo )
         {
             this.type = type;
             this.proposal = proposal;
@@ -484,7 +499,7 @@ public class Analyzer
             @Override
             public State analyze( Analyzer ctx, String line )
             {
-                ctx.addEvent( new HouseVote( ctx, new Motion( Motion.Type.UNKNOWN, "..", null ) ) );
+                ctx.addEvent( new HouseVote( ctx, new Motion( null, "..", null ) ) );
                 ctx.clearVoteState();
                 ctx.action = null;
                 ctx.voteExpected = false;
@@ -556,7 +571,7 @@ public class Analyzer
                     // a committee report.
                     if(ctx.currentVoteGroup == VoteGroup.ABSENT || line.startsWith( "Date:" ) || line.startsWith( "/s/" ))
                     {
-                        ctx.addEvent( new CommitteeVote( ctx, new Motion( Motion.Type.UNKNOWN, "..", null ) ) );
+                        ctx.addEvent( new CommitteeVote( ctx, new Motion( null, "..", null ) ) );
                         ctx.clearVoteState();
                         ctx.action = null;
                         ctx.voteExpected = false;

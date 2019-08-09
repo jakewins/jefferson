@@ -49,12 +49,12 @@ public class Analyzer2_Test
         List<Analyzer.Action> actions =
                 new Analyzer2().analyze( "http://example.com", loadJournal( "HB10_taken_up_amended_and_laid_over.txt" ) );
 
-        Analyzer.Motion hb10 = new Analyzer.Motion( Analyzer.Motion.Type.MAIN, "HCS HB 10", null );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.SUBSIDIARY, "House Amendment 2 of HCS HB 10", hb10 ) ), actions.get( 0 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.SUBSIDIARY, "House Amendment 3 of HCS HB 10", hb10 ) ), actions.get( 1 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.SUBSIDIARY, "House Amendment 4 of HCS HB 10", hb10 ) ), actions.get( 2 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.SUBSIDIARY, "House Amendment 5 of HCS HB 10", hb10 ) ), actions.get( 3 ) );
-        assertEq( new Analyzer2.DefeatedWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.SUBSIDIARY, "House Amendment 6 of HCS HB 10", hb10 ) ), actions.get( 4 ) );
+        Analyzer.Motion hb10 = new Analyzer.Motion( Analyzer.Motion.Type.MAIN_MOTION, "HCS HB 10", null );
+        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 2 of HCS HB 10", hb10 ) ), actions.get( 0 ) );
+        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 3 of HCS HB 10", hb10 ) ), actions.get( 1 ) );
+        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 4 of HCS HB 10", hb10 ) ), actions.get( 2 ) );
+        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 5 of HCS HB 10", hb10 ) ), actions.get( 3 ) );
+        assertEq( new Analyzer2.DefeatedWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 6 of HCS HB 10", hb10 ) ), actions.get( 4 ) );
 
         assert actions.get( 5 ) instanceof Analyzer2.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 5 ));
         assertEq( 40, actions.get( 5 ).vote().ayes.size() );

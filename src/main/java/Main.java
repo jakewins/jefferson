@@ -1,4 +1,5 @@
 import valle.Analyzer;
+import valle.Analyzer2;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -79,7 +80,7 @@ public class Main
 
         String pdfFile = path.getFileName().toString().replace( ".txt", "" );
 
-        return new Analyzer().analyze(
+        return new Analyzer2().analyze(
                 String.format( "https://house.mo.gov/billtracking/bills191/jrnpdf/%s", pdfFile ),
                 Arrays.asList( raw.split( "\n" ) ) );
     }
