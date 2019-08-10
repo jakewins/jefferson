@@ -44,16 +44,16 @@ public class Main
         int absent=0, withMajority=0, total=0;
         for ( Analyzer.Action event : actions )
         {
-            if(!event.vote().isRepInvolved( search )) {
+            if(event.vote() == null || !event.vote().isRepInvolved( search )) {
                 continue;
             }
             String motion = event.motion().proposal.replace( ",", " " ).trim();
+            String mainMotion = event.motion().mainMotion().proposal.trim();
             switch(event.vote().voteOfRep( search )) {
-
             case AYES:
                 total++;
                 if(event.vote().noes.size() > 30) {
-                    System.out.printf("\"%s\",y,%d,%d,%s,%d%n", motion, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
+                    System.out.printf("\"%s\",\"%s\",y,%d,%d,%s,%d%n", motion, mainMotion, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
                 }
                 if(event.vote().noes.size() < event.vote().ayes.size()) {
                     withMajority++;
@@ -62,7 +62,7 @@ public class Main
             case NOES:
                 total++;
                 if(event.vote().ayes.size() > 30) {
-                    System.out.printf("\"%s\",n,%d,%d,%s,%d%n", motion, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
+                    System.out.printf("\"%s\",\"%s\",n,%d,%d,%s,%d%n", motion, mainMotion, event.vote().ayes.size(), event.vote().noes.size(), event.source().sourceUrl, event.source().lineNo);
                 }
                 if(event.vote().noes.size() > event.vote().ayes.size()) {
                     withMajority++;

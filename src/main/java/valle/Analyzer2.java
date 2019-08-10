@@ -87,14 +87,14 @@ public class Analyzer2
                             String.format( "House Amendment %s of %s", amendmentNo, ctx.activeMotion.proposal ),
                             ctx.activeMotion );
                     System.err.printf("%s from %s adopted%n", motion.proposal, rep );
-                    ctx.addAction( new AdoptWithoutVote( motion ) );
+                    ctx.addAction( new AdoptWithoutVote( motion, pg.source ) );
                     return IN_MOTION;
                 }
 
                 Matcher billAdopted = Patterns.billAdopted.matcher( pg.contents );
                 if(billAdopted.matches()) {
                     // TODO ensure we're talking about the right bill..
-                    ctx.addAction( new AdoptWithoutVote( ctx.mainMotion ) );
+                    ctx.addAction( new AdoptWithoutVote( ctx.mainMotion, pg.source ) );
                     ctx.mainMotion = null;
                     ctx.activeMotion = null;
                     return NEXT_MOTION;
@@ -137,14 +137,14 @@ public class Analyzer2
 
                 Matcher motionDefeated = Patterns.motionDefeated.matcher( pg.contents );
                 if(motionDefeated.matches()) {
-                    ctx.addAction( new DefeatedWithoutVote( ctx.activeMotion ) );
+                    ctx.addAction( new DefeatedWithoutVote( ctx.activeMotion, pg.source ) );
                     ctx.activeMotion = ctx.activeMotion.relatesTo;
                     return IN_MOTION;
                 }
 
                 Matcher motionAdopted = Patterns.motionAdopted.matcher( pg.contents );
                 if(motionAdopted.matches()) {
-                    ctx.addAction( new AdoptWithoutVote( ctx.activeMotion ) );
+                    ctx.addAction( new AdoptWithoutVote( ctx.activeMotion, pg.source ) );
                     return this.handleMotionAdopted(ctx, pg);
                 }
 
@@ -211,6 +211,14 @@ public class Analyzer2
                     return IN_MOTION;
                 }
 
+                Matcher moveToCommit = Patterns.moveToCommit.matcher( pg.contents );
+                if(moveToCommit.matches()) {
+                    String rep = moveToCommit.group( 1 );
+                    System.err.printf("%s moved to commit to committee%n", rep );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFER_TO_COMMITTEE, "commit", ctx.activeMotion );
+                    return IN_MOTION;
+                }
+
                 Matcher miscMovement = Patterns.miscMovement.matcher( pg.contents );
                 if(miscMovement.matches()) {
                     String rep = miscMovement.group( 1 );
@@ -231,7 +239,7 @@ public class Analyzer2
             @Override
             State analyze( Analyzer2 ctx, Paragraph pg )
             {
-                ctx.addAction( new AdoptedByVote( ctx.activeMotion, ctx.voteParser.toVote() ) );
+                ctx.addAction( new AdoptedByVote( ctx.activeMotion, ctx.voteParser.toVote(), pg.source ) );
                 return this.handleMotionAdopted(ctx, pg);
             }
         },
@@ -239,7 +247,7 @@ public class Analyzer2
             @Override
             State analyze( Analyzer2 ctx, Paragraph pg )
             {
-                ctx.addAction( new DefeatedByVote( ctx.activeMotion, ctx.voteParser.toVote() ) );
+                ctx.addAction( new DefeatedByVote( ctx.activeMotion, ctx.voteParser.toVote(), pg.source ) );
                 ctx.activeMotion = ctx.activeMotion.relatesTo;
                 if(ctx.activeMotion != null) {
                     return IN_MOTION.analyze( ctx, pg );
@@ -312,10 +320,18 @@ public class Analyzer2
     public static class DefeatedWithoutVote implements Analyzer.Action
     {
         public final Analyzer.Motion motion;
+        private final Analyzer.Source source;
 
-        public DefeatedWithoutVote( Analyzer.Motion motion )
+        public DefeatedWithoutVote( Analyzer.Motion motion, Analyzer.Source source )
         {
             this.motion = motion;
+            this.source = source;
+        }
+
+        @Override
+        public Analyzer.Source source()
+        {
+            return source;
         }
 
         @Override
@@ -362,11 +378,19 @@ public class Analyzer2
     {
         public final Analyzer.Motion motion;
         public final Analyzer.Vote vote;
+        private final Analyzer.Source source;
 
-        public AdoptedByVote( Analyzer.Motion motion, Analyzer.Vote vote )
+        public AdoptedByVote( Analyzer.Motion motion, Analyzer.Vote vote, Analyzer.Source source )
         {
             this.motion = motion;
             this.vote = vote;
+            this.source = source;
+        }
+
+        @Override
+        public Analyzer.Source source()
+        {
+            return source;
         }
 
         @Override
@@ -413,17 +437,25 @@ public class Analyzer2
     {
         public final Analyzer.Motion motion;
         public final Analyzer.Vote vote;
+        private final Analyzer.Source source;
 
-        public DefeatedByVote( Analyzer.Motion motion, Analyzer.Vote vote )
+        public DefeatedByVote( Analyzer.Motion motion, Analyzer.Vote vote, Analyzer.Source source )
         {
             this.motion = motion;
             this.vote = vote;
+            this.source = source;
         }
 
         @Override
         public String toString()
         {
             return "DefeatedByVote{" + "motion=" + motion + ", vote=" + vote + '}';
+        }
+
+        @Override
+        public Analyzer.Source source()
+        {
+            return source;
         }
 
         @Override
@@ -464,10 +496,18 @@ public class Analyzer2
     public static class AdoptWithoutVote implements Analyzer.Action
     {
         public final Analyzer.Motion motion;
+        private final Analyzer.Source source;
 
-        public AdoptWithoutVote( Analyzer.Motion motion )
+        public AdoptWithoutVote( Analyzer.Motion motion, Analyzer.Source source )
         {
             this.motion = motion;
+            this.source = source;
+        }
+
+        @Override
+        public Analyzer.Source source()
+        {
+            return source;
         }
 
         @Override
@@ -597,7 +637,7 @@ public class Analyzer2
         static Pattern takenUp = Pattern.compile("\\s*([^,]+),.*was(?: again)? taken up by (.*)\\.?\\s*");
 
         // HCS HB 10, as amended, was laid over.
-        static Pattern laidOver = Pattern.compile("\\s*([^,]+),.*was laid over\\.?\\s*");
+        static Pattern laidOver = Pattern.compile("\\s*([^,]+),?.*was laid over\\.?\\s*");
 
         // SB 514, as amended, was referred to the Committee on Fiscal Review pursuant to  Rule 53.
         static Pattern referredToCommittee = Pattern.compile("\\s*([^,]+), (.*) was referred to (.*) pursuant to.*");
@@ -644,11 +684,11 @@ public class Analyzer2
         // Representative Eggleston moved that HCS HB 548 be recommitted to the Committee on  Rules - Legislative Oversight.
         static Pattern moveToRecommit = Pattern.compile( "\\s+Representative\\s+(.*)\\s+moved that\\s+(.*)\\s+be\\s+recommitted\\s+to\\s+the.*" );
 
+        // Representative Sain moved that, pursuant to Rule 24(16)(b), SB 368, as amended, be  committed to the Committee on Fiscal Review.
+        static Pattern moveToCommit = Pattern.compile( "\\s+Representative\\s+(.*)\\s+moved\\s+that\\s*(.+)\\s+be\\s+committed\\s+to\\s+(.*)" );
+
         // Representative Rone moved that HCS SB 21 be adopted.
         static Pattern moveToAdopt = Pattern.compile( "\\s*Representative (.*) moved that (.*) be adopted.*" );
-
-        //  Representative Shaul (113) moved that SS SCS SJRs 14 & 9 be truly agreed to and  finally passed.
-        static Pattern moveToPass = Pattern.compile( "\\s*Representative (.*) moved that (.*) be\\s+truly\\s+agreed\\s+to\\s+and\\s+finally.*" );
 
         // Representative Ross moved that the House refuse to recede from its position on  HCS SB 36, as amended, and grant the Senate a conference.
         static Pattern moveToRefuseReceding = Pattern.compile( "\\s*Representative (.*)\\s+moved\\s+that\\s+the House refuse to recede.*" );

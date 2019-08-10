@@ -175,6 +175,18 @@ public class Analyzer
             this.relatesTo = relatesTo;
         }
 
+        // Backtrack until we find the main motion
+        public Motion mainMotion()
+        {
+            if(relatesTo == null) {
+                if(type != Type.MAIN_MOTION) {
+                    throw new IllegalStateException( this + " does not relate to any other motion, but is not a MAIN_MOTION?" );
+                }
+                return this;
+            }
+            return relatesTo.mainMotion();
+        }
+
         @Override
         public String toString()
         {
