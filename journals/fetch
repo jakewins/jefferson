@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 
-# "https://house.mo.gov/billtracking/bills191/jrnpdf/jrn026.pdf"
+# 2019-1
+# https://house.mo.gov/billtracking/bills191/jrnpdf/jrn026.pdf
+# 2018-1
+# https://house.mo.gov/billtracking/bills181/jrnpdf/jrn001.pdf
 
 main() {
-  local start="$1"; shift
-  local end="$1"; shift
+  local session="${1:?Need SESSION id}"; shift
+  local start="${1:?Need START index}"; shift
+  local end="${1:?Need END index}"; shift
+
+  mkdir -p "${session}"
+  cd "${session}"
+
   for i in $(seq "${start}" "${end}"); do
     file="$(printf "jrn%03d.pdf" "${i}")"
     if [[ -f "${file}" ]]; then
       continue
     fi
-    url="https://house.mo.gov/billtracking/bills191/jrnpdf/${file}"
+    url="https://house.mo.gov/billtracking/bills${session}/jrnpdf/${file}"
     wget "${url}"
   done
 }

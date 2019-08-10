@@ -1,5 +1,5 @@
 target
 *.iml
 .idea
-journals/*.pdf
-journals/*.txt
+journals/*/*.pdf
+journals/*/*.txt

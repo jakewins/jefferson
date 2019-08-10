@@ -20,7 +20,7 @@ public class Strip
     public static void main(String args[]) throws IOException
     {
         List<Path> unstripped =
-                Files.list( Path.of( "/home/jake/Code/toy/chesney/valle/journals" ) ).filter(
+                Files.list( Path.of( "./journals/181" ) ).filter(
                         p -> p.getFileName().toString().endsWith( ".pdf" ) && !Files.exists(
                                 p.getParent().resolve( p.getFileName() + ".txt" ) ) ).collect(
                         Collectors.toList() );

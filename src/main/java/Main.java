@@ -13,10 +13,11 @@ public class Main
 {
     public static void main(String args[]) throws IOException
     {
-        String search = args[0];
+        String session = args[0];
+        String search = args[1];
         List<Path> journals =
-                Files.list( Path.of( "./journals" ) ).filter(
-                        p -> p.getFileName().toString().endsWith( ".txt" ) )
+                Files.list( Path.of( "./journals/" + session ) )
+                        .filter( p -> p.getFileName().toString().endsWith( ".txt" ) )
                         .collect( Collectors.toList() );
 
         List<Analyzer.Action> actions = new ArrayList<>();
@@ -33,7 +34,7 @@ public class Main
                 String pdfFile = path.getFileName().toString().replace( ".txt", "" );
 
                 actions.addAll( analyzer.analyze(
-                        String.format( "https://house.mo.gov/billtracking/bills191/jrnpdf/%s", pdfFile ),
+                        String.format( "https://house.mo.gov/billtracking/bills%s/jrnpdf/%s", session, pdfFile ),
                         Arrays.asList( raw.split( "\n" ) ) ));
             }
         } catch(Exception e) {
