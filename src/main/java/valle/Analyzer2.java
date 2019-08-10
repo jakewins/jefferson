@@ -42,6 +42,12 @@ public class Analyzer2
                 if(ctx.activeMotion == null) {
                     throw new RuntimeException( "Can't be IN_MOTION, there is no activeMotion set" );
                 }
+
+                Matcher takenUp = Patterns.takenUp.matcher( pg.contents );
+                if(takenUp.matches()) {
+                    throw new RuntimeException( "Can't be taken up, there is an active main motion already?" );
+                }
+
                 Matcher laidOver = Patterns.laidOver.matcher( pg.contents );
                 if(laidOver.matches()) {
                     System.err.printf("%s was laid over%n", ctx.activeMotion.proposal);
@@ -64,6 +70,15 @@ public class Analyzer2
                     return NEXT_MOTION;
                 }
 
+                Matcher amendmentAdoptedByVote = Patterns.amendmentAdoptedByVote.matcher( pg.contents );
+                if(amendmentAdoptedByVote.matches()) {
+                    String amendmentNo = amendmentAdoptedByVote.group( 2 );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.AMEND, String.format( "House Amendment %s of %s", amendmentNo, ctx.activeMotion.proposal ), ctx.activeMotion );
+                    ctx.activeVote = new VoteContext();
+                    ctx.postVoteState = POST_ADOPT_VOTE;
+                    return IN_LONGFORM_VOTE;
+                }
+
                 Matcher amendmentAdopted = Patterns.amendmentAdopted.matcher( pg.contents );
                 if(amendmentAdopted.matches()) {
                     String rep = amendmentAdopted.group( 1 );
@@ -73,8 +88,31 @@ public class Analyzer2
                             ctx.activeMotion );
                     System.err.printf("%s from %s adopted%n", motion.proposal, rep );
                     ctx.addAction( new AdoptWithoutVote( motion ) );
-                    ctx.activeMotion = ctx.activeMotion;
                     return IN_MOTION;
+                }
+
+                Matcher billAdopted = Patterns.billAdoptedByVote.matcher( pg.contents );
+                if(billAdopted.matches()) {
+                    String rep = billAdopted.group( 1 );
+                    String bill = billAdopted.group( 2 );
+                    if(!ctx.mainMotion.proposal.toLowerCase().contains( bill.toLowerCase().trim() )) {
+                        throw new RuntimeException( String.format("Expected adoption of %s to refer to main motion, which is %s.", bill, ctx.mainMotion ) );
+                    }
+                    ctx.activeVote = new VoteContext();
+                    ctx.postVoteState = POST_ADOPT_VOTE;
+                    return IN_LONGFORM_VOTE;
+                }
+
+                Matcher billPassedByVote = Patterns.billPassedByVote.matcher( pg.contents );
+                if(billPassedByVote.matches()) {
+                    String rep = billPassedByVote.group( 1 );
+                    String bill = billPassedByVote.group( 2 );
+                    if(!ctx.mainMotion.proposal.toLowerCase().contains( bill.toLowerCase().trim() )) {
+                        throw new RuntimeException( String.format("Expected adoption of %s to refer to main motion, which is %s.", bill, ctx.mainMotion ) );
+                    }
+                    ctx.activeVote = new VoteContext();
+                    ctx.postVoteState = POST_ADOPT_VOTE;
+                    return IN_LONGFORM_VOTE;
                 }
 
                 Matcher motionDefeated = Patterns.motionDefeated.matcher( pg.contents );
@@ -82,6 +120,12 @@ public class Analyzer2
                     ctx.addAction( new DefeatedWithoutVote( ctx.activeMotion ) );
                     ctx.activeMotion = ctx.activeMotion.relatesTo;
                     return IN_MOTION;
+                }
+
+                Matcher motionAdopted = Patterns.motionAdopted.matcher( pg.contents );
+                if(motionAdopted.matches()) {
+                    ctx.addAction( new AdoptWithoutVote( ctx.activeMotion ) );
+                    return this.handleMotionAdopted(ctx, pg);
                 }
 
                 Matcher motionDefeatedByVote = Patterns.motionDefeatedByVote.matcher( pg.contents );
@@ -102,19 +146,31 @@ public class Analyzer2
                 if(movedPreviousQuestion.matches()) {
                     String rep = movedPreviousQuestion.group( 1 );
                     System.err.printf("%s moved the previous question%n", rep );
-                    if(ctx.activeMotion == null) {
-                        throw new RuntimeException( ".." );
-                    }
                     ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.END_DEBATE, "move the previous question", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
-                Matcher miscMovement = Patterns.miscMovement.matcher( pg.contents );
-                if(miscMovement.matches()) {
-                    String rep = miscMovement.group( 1 );
-                    String movement = miscMovement.group( 2 );
-                    System.err.printf("%s moved that %s%n", rep, movement );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.MISC, movement, ctx.activeMotion );
+                Matcher moveToReconsiderVote = Patterns.moveToReconsiderVote.matcher( pg.contents );
+                if(moveToReconsiderVote.matches()) {
+                    String rep = movedPreviousQuestion.group( 1 );
+                    System.err.printf("%s moved the previous question%n", rep );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.RECONSIDER_VOTE, "reconsider vote", ctx.activeMotion );
+                    return IN_MOTION;
+                }
+
+                Matcher moveToRefuseReceding = Patterns.moveToRefuseReceding.matcher( pg.contents );
+                if(moveToRefuseReceding.matches()) {
+                    String rep = moveToRefuseReceding.group( 1 );
+                    System.err.printf("%s moved the house refuse to recede%n", rep );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFUSE_TO_RECEDE, "refuse to recede", ctx.activeMotion );
+                    return IN_MOTION;
+                }
+
+                Matcher moveToRefuseToAdopt = Patterns.moveToRefuseToAdopt.matcher( pg.contents );
+                if(moveToRefuseToAdopt.matches()) {
+                    String rep = moveToRefuseToAdopt.group( 1 );
+                    System.err.printf("%s moved the house refuse to adopt%n", rep );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFUSE_TO_ADOPT, "refuse to adopt", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -124,6 +180,23 @@ public class Analyzer2
                     String bill = moveToAdopt.group( 2 );
                     System.err.printf("%s moved to adopt %s%n", rep, bill );
                     ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.ADOPT, "adopt", ctx.activeMotion );
+                    return IN_MOTION;
+                }
+
+                Matcher moveToRecommit = Patterns.moveToRecommit.matcher( pg.contents );
+                if(moveToRecommit.matches()) {
+                    String rep = moveToRecommit.group( 1 );
+                    System.err.printf("%s moved to recommit to committee%n", rep );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFER_TO_COMMITTEE, "recommit", ctx.activeMotion );
+                    return IN_MOTION;
+                }
+
+                Matcher miscMovement = Patterns.miscMovement.matcher( pg.contents );
+                if(miscMovement.matches()) {
+                    String rep = miscMovement.group( 1 );
+                    String motion = miscMovement.group( 2 );
+                    System.err.printf("%s moved that %s%n", rep, motion );
+                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.MISC, motion, ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -140,18 +213,7 @@ public class Analyzer2
             {
                 ctx.addAction( new AdoptedByVote( ctx.activeMotion, ctx.activeVote.toVote() ) );
                 ctx.activeVote = null;
-                switch(ctx.activeMotion.type) {
-                case END_DEBATE: ctx.activeMotion = ctx.mainMotion; break;
-                case AMEND:
-                    ctx.activeMotion = ctx.activeMotion.relatesTo;
-                    break;
-                default:
-                    throw new RuntimeException( String.format( "Don't know how to handle adoption of %s", ctx.activeMotion ) );
-                }
-                if(ctx.activeMotion != null) {
-                    return IN_MOTION.analyze( ctx, pg );
-                }
-                return NEXT_MOTION.analyze( ctx, pg );
+                return this.handleMotionAdopted(ctx, pg);
             }
         },
         POST_DEFEAT_VOTE {
@@ -229,6 +291,30 @@ public class Analyzer2
         };
 
         abstract State analyze( Analyzer2 ctx, Paragraph pg );
+
+        State handleMotionAdopted( Analyzer2 ctx, Paragraph pg ) {
+            switch(ctx.activeMotion.type) {
+            case END_DEBATE: ctx.activeMotion = ctx.mainMotion; break;
+            case AMEND:
+                ctx.activeMotion = ctx.activeMotion.relatesTo;
+                break;
+            // These are movements that clear the stack
+            case REFUSE_TO_ADOPT:
+            case REFUSE_TO_RECEDE:
+            case ADOPT:
+            case MAIN_MOTION:
+            case REFER_TO_COMMITTEE:
+                ctx.mainMotion = null;
+                ctx.activeMotion = null;
+                break;
+            default:
+                throw new RuntimeException( String.format( "Don't know how to handle adoption of %s", ctx.activeMotion ) );
+            }
+            if(ctx.activeMotion != null) {
+                return IN_MOTION.analyze( ctx, pg );
+            }
+            return NEXT_MOTION.analyze( ctx, pg );
+        }
     }
 
     public List<Analyzer.Action> analyze( String url, Iterable<String> inputLines ) {
@@ -530,11 +616,24 @@ public class Analyzer2
         // SB 514, as amended, was referred to the Committee on Fiscal Review pursuant to  Rule 53.
         static Pattern referredToCommittee = Pattern.compile("\\s*([^,]+), (.*) was referred to (.*) pursuant to.*");
 
+        // On motion of Representative Merideth, House Amendment No. 1, as amended, was  adopted by the following vote, the ayes and noes having been demanded by Representative  Merideth:
+        static Pattern amendmentAdoptedByVote = Pattern.compile( "\\s*On motion of (.+), House Amendment No. (\\d+).*was\\s+adopted\\s+by\\s+the\\s+following.*" );
+
         // On motion of Representative Smith, House Amendment No. 2 was adopted.
-        static Pattern amendmentAdopted = Pattern.compile( "\\s*On motion of (.+), House Amendment No. (\\d+) was adopted.*" );
+        static Pattern amendmentAdopted = Pattern.compile( "\\s*On motion of (.+), House Amendment No. (\\d+).*was adopted.*" );
+
+        // On motion of Representative Patterson, SS HCS HB 677 was adopted by the following  vote
+        static Pattern billAdoptedByVote = Pattern.compile( "\\s*On motion of (.+), (.*)\\s+was\\s+adopted\\s+by\\s+the\\s+following\\s+vote.*" );
+
+        // On motion of Representative Rone, SB 21 was truly agreed to and finally passed by the  following vote:
+        // On motion of Representative Swan, SB 358, as amended, was read the third time and  passed by the following vote:
+        static Pattern billPassedByVote = Pattern.compile( "\\s*On motion of Representative (.*),\\s+([^,]+)(?:, as amended,)?(?:(?: was truly)|(?: was read)).*passed\\s+by\\s+the\\s+following.*" );
 
         // Which motion was defeated.
         static Pattern motionDefeated = Pattern.compile( "\\s*Which motion was defeated\\.?\\s*" );
+
+        // Which motion was adopted.
+        static Pattern motionAdopted = Pattern.compile( "\\s*Which motion was adopted\\.?\\s*" );
 
         // Which motion was defeated by the following vote
         static Pattern motionDefeatedByVote = Pattern.compile( "\\s*Which motion was defeated by the following vote.*" );
@@ -549,8 +648,20 @@ public class Analyzer2
         // Representative Ross moved that the House refuse to recede from its position on  HCS SB 36, as amended, and grant the Senate a conference.
         static Pattern miscMovement = Pattern.compile( "\\s*Representative (.+) moved that (.*).*" );
 
+        // Representative Eggleston moved that HCS HB 548 be recommitted to the Committee on  Rules - Legislative Oversight.
+        static Pattern moveToRecommit = Pattern.compile( "\\s+Representative Eggleston moved that\\s+(.*)\\s+be\\s+recommitted\\s+to\\s+the.*" );
+
         // Representative Rone moved that HCS SB 21 be adopted.
         static Pattern moveToAdopt = Pattern.compile( "\\s*Representative (.*) moved that (.*) be adopted.*" );
+
+        // Representative Ross moved that the House refuse to recede from its position on  HCS SB 36, as amended, and grant the Senate a conference.
+        static Pattern moveToRefuseReceding = Pattern.compile( "\\s*Representative (.*)\\s+moved\\s+that\\s+the House refuse to recede.*" );
+
+        // Representative Griesheimer moved that the House refuse to adopt SS HCS#2 HB 499  and request the Senate to recede from its position and, failing to do so, grant the House a  conference.
+        static Pattern moveToRefuseToAdopt = Pattern.compile( "\\s*Representative (.*)\\s+moved\\s+that\\s+the\\s+House\\s+refuse\\s+to\\s+adopt.*" );
+
+        // Representative Coleman (32), having voted on the prevailing side, moved that the vote by  which HCS SB 182, as amended, was adopted be reconsidered.
+        static Pattern moveToReconsiderVote = Pattern.compile( "\\s+Representative ([^,]+),.*moved that\\s+the\\s+vote\\s+by\\s+which\\s+(.*),\\s+as\\s+amended,\\s+was\\s+adopted be reconsidered.*" );
 
         // HCR 1, HR 1, HCS HB 1158, SS SB 213, SB 185, HCS SB 275, SS HB 138, HCS SCS SB 174, SBs 70 & 128, HB 616
         // HCS HBs 275 & 853, SCR 1, HCB 1, SS HCS#2, SS SB 145, HJR 30, SS#2 SCR 14, HBs 243 & 544, CCR SS SCS HCS HB 399

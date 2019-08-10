@@ -145,8 +145,12 @@ public class Analyzer
             MAIN_MOTION( Classification.MAIN ),
             AMEND( Classification.SUBSIDIARY ),
             ADOPT( Classification.SUBSIDIARY ),
+            RECONSIDER_VOTE( Classification.SUBSIDIARY ),
             MISC( Classification.SUBSIDIARY ),
             END_DEBATE( Classification.SUBSIDIARY ),
+            REFER_TO_COMMITTEE( Classification.SUBSIDIARY ),
+            REFUSE_TO_RECEDE( Classification.SUBSIDIARY ),
+            REFUSE_TO_ADOPT( Classification.SUBSIDIARY ),
             ;
             public final Classification classification;
 
