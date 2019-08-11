@@ -1,5 +1,7 @@
-import valle.Analyzer;
-import valle.Analyzer2;
+package jefferson;
+
+import jefferson.analyzer.Analyzer;
+import jefferson.domain.Action;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,11 +22,11 @@ public class Main
                         .filter( p -> p.getFileName().toString().endsWith( ".txt" ) )
                         .collect( Collectors.toList() );
 
-        List<Analyzer.Action> actions = new ArrayList<>();
+        List<Action> actions = new ArrayList<>();
         int i=0;
         try
         {
-            Analyzer2 analyzer = new Analyzer2();
+            Analyzer analyzer = new Analyzer();
             for (; i < journals.size(); i++ )
             {
                 Path path = journals.get( i );
@@ -43,7 +45,7 @@ public class Main
         }
 
         int absent=0, withMajority=0, total=0;
-        for ( Analyzer.Action event : actions )
+        for ( Action event : actions )
         {
             if(event.vote() == null || !event.vote().isRepInvolved( search )) {
                 continue;

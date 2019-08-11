@@ -1,18 +1,18 @@
-package valle;
+package jefferson.analyzer;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 // Consumes a stream of lines, strips out page headers and footers, and joins line-broken sentences
 // into single lines.
 public class Sanitizer
 {
     public static class Paragraph {
-        public final Analyzer.Source source;
+        public final Source source;
         public final String contents;
 
-        public Paragraph( Analyzer.Source source, String contents )
+        public Paragraph( Source source, String contents )
         {
             this.source = source;
             this.contents = contents;
@@ -27,9 +27,9 @@ public class Sanitizer
         int lineNo = 1;
         for ( String line : in )
         {
-            if(line.isBlank() || Patterns.header.matcher( line ).matches() ) {
+            if(line.isBlank() || header.matcher( line ).matches() ) {
                 if(current.length() > 0) {
-                    out.add( new Paragraph( new Analyzer.Source( url, lineNo ), current.toString() ) );
+                    out.add( new Paragraph( new Source( url, lineNo ), current.toString() ) );
                     current = new StringBuilder();
                 }
             } else {
@@ -40,8 +40,10 @@ public class Sanitizer
         }
 
         if(current.length() > 0) {
-            out.add( new Paragraph( new Analyzer.Source( url, lineNo ), current.toString() ) );
+            out.add( new Paragraph( new Source( url, lineNo ), current.toString() ) );
         }
         return out;
     }
+
+    static Pattern header = Pattern.compile("(\\s*(\\d+)\\s*Journal of the House.*)|([a-zA-Z-]+ Day–[a-zA-Z]+, [a-zA-Z]+ \\d+, \\d+\\s*\\d+\\s*)");
 }

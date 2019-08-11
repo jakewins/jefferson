@@ -1,4 +1,7 @@
-package valle;
+package jefferson.analyzer;
+
+import jefferson.domain.Action;
+import jefferson.domain.Motion;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-public class Analyzer2_Test
+public class Analyzer_Test
 {
     public static void main(String ... argv) throws Exception
     {
@@ -46,20 +49,20 @@ public class Analyzer2_Test
     }
 
     public void testParseMotionOrder() throws Exception {
-        List<Analyzer.Action> actions =
-                new Analyzer2().analyze( "http://example.com", loadJournal( "HB10_taken_up_amended_and_laid_over.txt" ) );
+        List<Action> actions =
+                new Analyzer().analyze( "http://example.com", loadJournal( "HB10_taken_up_amended_and_laid_over.txt" ) );
 
-        Analyzer.Motion hb10 = new Analyzer.Motion( Analyzer.Motion.Type.MAIN_MOTION, "HCS HB 10", null );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 2 of HCS HB 10", hb10 ), null ), actions.get( 0 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 3 of HCS HB 10", hb10 ), null ), actions.get( 1 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 4 of HCS HB 10", hb10 ), null ), actions.get( 2 ) );
-        assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 5 of HCS HB 10", hb10 ), null ), actions.get( 3 ) );
-        assertEq( new Analyzer2.DefeatedWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment No. 6", hb10 ), null ), actions.get( 4 ) );
+        Motion hb10 = new Motion( Motion.Type.MAIN_MOTION, "HCS HB 10", null );
+        assertEq( new Analyzer.AdoptWithoutVote( new Motion( Motion.Type.AMEND, "House Amendment 2 of HCS HB 10", hb10 ), null ), actions.get( 0 ) );
+        assertEq( new Analyzer.AdoptWithoutVote( new Motion( Motion.Type.AMEND, "House Amendment 3 of HCS HB 10", hb10 ), null ), actions.get( 1 ) );
+        assertEq( new Analyzer.AdoptWithoutVote( new Motion( Motion.Type.AMEND, "House Amendment 4 of HCS HB 10", hb10 ), null ), actions.get( 2 ) );
+        assertEq( new Analyzer.AdoptWithoutVote( new Motion( Motion.Type.AMEND, "House Amendment 5 of HCS HB 10", hb10 ), null ), actions.get( 3 ) );
+        assertEq( new Analyzer.DefeatedWithoutVote( new Motion( Motion.Type.AMEND, "House Amendment No. 6", hb10 ), null ), actions.get( 4 ) );
 
-        assert actions.get( 5 ) instanceof Analyzer2.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 5 ));
+        assert actions.get( 5 ) instanceof Analyzer.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 5 ));
         assertEq( 40, actions.get( 5 ).vote().ayes.size() );
         assertEq( 101, actions.get( 5 ).vote().noes.size() );
-        assert actions.get( 6 ) instanceof Analyzer2.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 6 ));
+        assert actions.get( 6 ) instanceof Analyzer.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 6 ));
         assertEq( 51, actions.get( 6 ).vote().ayes.size() );
         assertEq( 85, actions.get( 6 ).vote().noes.size() );
     }

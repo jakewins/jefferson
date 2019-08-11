@@ -1,6 +1,9 @@
-package valle;
+package jefferson.analyzer;
 
-import valle.Sanitizer.Paragraph;
+import jefferson.analyzer.Sanitizer.Paragraph;
+import jefferson.domain.Action;
+import jefferson.domain.Motion;
+import jefferson.domain.Vote;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,25 +12,25 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Analyzer2
+public class Analyzer
 {
     private final VoteParser voteParser = new VoteParser();
-    private List<Analyzer.Action> out;
-    private Analyzer.Motion mainMotion;
-    private Analyzer.Motion activeMotion;
+    private List<Action> out;
+    private Motion mainMotion;
+    private Motion activeMotion;
     private State postVoteState;
 
     enum State {
         NEXT_MOTION {
             @Override
-            State analyze( Analyzer2 ctx, Paragraph pg )
+            State analyze( Analyzer ctx, Paragraph pg )
             {
                 Matcher takenUp = Patterns.takenUp.matcher( pg.contents );
                 if(takenUp.matches()) {
                     String bill = takenUp.group( 1 );
                     String rep = takenUp.group( 2 );
                     System.err.printf("%s taken up by %s%n", bill, rep );
-                    ctx.mainMotion = new Analyzer.Motion( Analyzer.Motion.Type.MAIN_MOTION, bill, null );
+                    ctx.mainMotion = new Motion( Motion.Type.MAIN_MOTION, bill, null );
                     ctx.activeMotion = ctx.mainMotion;
                     return IN_MOTION;
                 }
@@ -37,7 +40,7 @@ public class Analyzer2
 
         IN_MOTION {
             @Override
-            State analyze( Analyzer2 ctx, Paragraph pg )
+            State analyze( Analyzer ctx, Paragraph pg )
             {
                 if(ctx.activeMotion == null) {
                     throw new RuntimeException( "Can't be IN_MOTION, there is no activeMotion set" );
@@ -84,7 +87,7 @@ public class Analyzer2
                 Matcher amendmentAdoptedByVote = Patterns.amendmentAdoptedByVote.matcher( pg.contents );
                 if(amendmentAdoptedByVote.matches()) {
                     String amendmentNo = amendmentAdoptedByVote.group( 2 );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.AMEND, String.format( "House Amendment %s of %s", amendmentNo, ctx.activeMotion.proposal ), ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.AMEND, String.format( "House Amendment %s of %s", amendmentNo, ctx.activeMotion.proposal ), ctx.activeMotion );
                     ctx.voteParser.newVote();
                     ctx.postVoteState = POST_ADOPT_VOTE;
                     return IN_VOTE;
@@ -94,7 +97,7 @@ public class Analyzer2
                 if(amendmentAdopted.matches()) {
                     String rep = amendmentAdopted.group( 1 );
                     String amendmentNo = amendmentAdopted.group( 2 );
-                    Analyzer.Motion motion = new Analyzer.Motion( Analyzer.Motion.Type.AMEND,
+                    Motion motion = new Motion( Motion.Type.AMEND,
                             String.format( "House Amendment %s of %s", amendmentNo, ctx.activeMotion.proposal ),
                             ctx.activeMotion );
                     System.err.printf("%s from %s adopted%n", motion.proposal, rep );
@@ -177,7 +180,7 @@ public class Analyzer2
                 if(movedPreviousQuestion.matches()) {
                     String rep = movedPreviousQuestion.group( 1 );
                     System.err.printf("%s moved the previous question%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.END_DEBATE, "move the previous question", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.END_DEBATE, "move the previous question", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -185,7 +188,7 @@ public class Analyzer2
                 if(moveToReconsiderVote.matches()) {
                     String rep = movedPreviousQuestion.group( 1 );
                     System.err.printf("%s moved the previous question%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.RECONSIDER_VOTE, "reconsider vote", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.RECONSIDER_VOTE, "reconsider vote", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -193,7 +196,7 @@ public class Analyzer2
                 if(moveToRefuseReceding.matches()) {
                     String rep = moveToRefuseReceding.group( 1 );
                     System.err.printf("%s moved the house refuse to recede%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFUSE_TO_RECEDE, "refuse to recede", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.REFUSE_TO_RECEDE, "refuse to recede", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -201,7 +204,7 @@ public class Analyzer2
                 if(moveToRefuseToAdopt.matches()) {
                     String rep = moveToRefuseToAdopt.group( 1 );
                     System.err.printf("%s moved the house refuse to adopt%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFUSE_TO_ADOPT, "refuse to adopt", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.REFUSE_TO_ADOPT, "refuse to adopt", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -209,14 +212,14 @@ public class Analyzer2
                 if(moveToAdopt.matches()) {
                     String rep = moveToAdopt.group( 1 );
                     String bill = moveToAdopt.group( 2 );
-                    if(bill.contains( "Amendment" ) && ctx.activeMotion.type == Analyzer.Motion.Type.MAIN_MOTION ) {
+                    if(bill.contains( "Amendment" ) && ctx.activeMotion.type == Motion.Type.MAIN_MOTION ) {
                         // We've missed someone offering an amendment
                         System.err.println("WARN: Missed amendment being offerred, retrofitting");
-                        ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.AMEND, bill, ctx.activeMotion );
+                        ctx.activeMotion = new Motion( Motion.Type.AMEND, bill, ctx.activeMotion );
                     } else
                     {
                         System.err.printf( "%s moved to adopt %s%n", rep, bill );
-                        ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.ADOPT, "adopt",
+                        ctx.activeMotion = new Motion( Motion.Type.ADOPT, "adopt",
                                 ctx.activeMotion );
                     }
                     return IN_MOTION;
@@ -226,7 +229,7 @@ public class Analyzer2
                 if(moveToRecommit.matches()) {
                     String rep = moveToRecommit.group( 1 );
                     System.err.printf("%s moved to recommit to committee%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFER_TO_COMMITTEE, "recommit", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.REFER_TO_COMMITTEE, "recommit", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -234,7 +237,7 @@ public class Analyzer2
                 if(moveToCommit.matches()) {
                     String rep = moveToCommit.group( 1 );
                     System.err.printf("%s moved to commit to committee%n", rep );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.REFER_TO_COMMITTEE, "commit", ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.REFER_TO_COMMITTEE, "commit", ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -243,7 +246,7 @@ public class Analyzer2
                     String rep = miscMovement.group( 1 );
                     String motion = miscMovement.group( 2 );
                     System.err.printf("%s moved that %s%n", rep, motion );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.MISC, motion, ctx.activeMotion );
+                    ctx.activeMotion = new Motion( Motion.Type.MISC, motion, ctx.activeMotion );
                     return IN_MOTION;
                 }
 
@@ -256,7 +259,7 @@ public class Analyzer2
         },
         POST_ADOPT_VOTE {
             @Override
-            State analyze( Analyzer2 ctx, Paragraph pg )
+            State analyze( Analyzer ctx, Paragraph pg )
             {
                 ctx.addAction( new AdoptedByVote( ctx.activeMotion, ctx.voteParser.toVote(), pg.source ) );
                 return this.handleMotionAdopted(ctx, pg);
@@ -264,7 +267,7 @@ public class Analyzer2
         },
         POST_DEFEAT_VOTE {
             @Override
-            State analyze( Analyzer2 ctx, Paragraph pg )
+            State analyze( Analyzer ctx, Paragraph pg )
             {
                 ctx.addAction( new DefeatedByVote( ctx.activeMotion, ctx.voteParser.toVote(), pg.source ) );
                 ctx.activeMotion = ctx.activeMotion.relatesTo;
@@ -276,7 +279,7 @@ public class Analyzer2
         },
         IN_VOTE {
             @Override
-            State analyze( Analyzer2 ctx, Paragraph pg )
+            State analyze( Analyzer ctx, Paragraph pg )
             {
                 boolean done = ctx.voteParser.analyze( pg );
                 if(!done ) {
@@ -288,9 +291,9 @@ public class Analyzer2
             }
         };
 
-        abstract State analyze( Analyzer2 ctx, Paragraph pg );
+        abstract State analyze( Analyzer ctx, Paragraph pg );
 
-        State handleMotionAdopted( Analyzer2 ctx, Paragraph pg ) {
+        State handleMotionAdopted( Analyzer ctx, Paragraph pg ) {
             switch(ctx.activeMotion.type) {
             case END_DEBATE: ctx.activeMotion = ctx.mainMotion; break;
             case AMEND:
@@ -317,7 +320,7 @@ public class Analyzer2
         }
     }
 
-    public List<Analyzer.Action> analyze( String url, Iterable<String> inputLines ) {
+    public List<Action> analyze( String url, Iterable<String> inputLines ) {
         this.out = new ArrayList<>();
 
         State state = State.NEXT_MOTION;
@@ -331,24 +334,24 @@ public class Analyzer2
         return out;
     }
 
-    void addAction( Analyzer.Action action ) {
+    void addAction( Action action ) {
         System.err.println(action);
         this.out.add( action );
     }
 
-    public static class DefeatedWithoutVote implements Analyzer.Action
+    public static class DefeatedWithoutVote implements Action
     {
-        public final Analyzer.Motion motion;
-        private final Analyzer.Source source;
+        public final Motion motion;
+        private final Source source;
 
-        public DefeatedWithoutVote( Analyzer.Motion motion, Analyzer.Source source )
+        public DefeatedWithoutVote( Motion motion, Source source )
         {
             this.motion = motion;
             this.source = source;
         }
 
         @Override
-        public Analyzer.Source source()
+        public Source source()
         {
             return source;
         }
@@ -360,13 +363,13 @@ public class Analyzer2
         }
 
         @Override
-        public Analyzer.Vote vote()
+        public Vote vote()
         {
             return null;
         }
 
         @Override
-        public Analyzer.Motion motion()
+        public Motion motion()
         {
             return motion;
         }
@@ -393,13 +396,13 @@ public class Analyzer2
         }
     }
 
-    public static class AdoptedByVote implements Analyzer.Action
+    public static class AdoptedByVote implements Action
     {
-        public final Analyzer.Motion motion;
-        public final Analyzer.Vote vote;
-        private final Analyzer.Source source;
+        public final Motion motion;
+        public final Vote vote;
+        private final Source source;
 
-        public AdoptedByVote( Analyzer.Motion motion, Analyzer.Vote vote, Analyzer.Source source )
+        public AdoptedByVote( Motion motion, Vote vote, Source source )
         {
             this.motion = motion;
             this.vote = vote;
@@ -407,7 +410,7 @@ public class Analyzer2
         }
 
         @Override
-        public Analyzer.Source source()
+        public Source source()
         {
             return source;
         }
@@ -419,13 +422,13 @@ public class Analyzer2
         }
 
         @Override
-        public Analyzer.Vote vote()
+        public Vote vote()
         {
             return vote;
         }
 
         @Override
-        public Analyzer.Motion motion()
+        public Motion motion()
         {
             return motion;
         }
@@ -452,13 +455,13 @@ public class Analyzer2
         }
     }
 
-    public static class DefeatedByVote implements Analyzer.Action
+    public static class DefeatedByVote implements Action
     {
-        public final Analyzer.Motion motion;
-        public final Analyzer.Vote vote;
-        private final Analyzer.Source source;
+        public final Motion motion;
+        public final Vote vote;
+        private final Source source;
 
-        public DefeatedByVote( Analyzer.Motion motion, Analyzer.Vote vote, Analyzer.Source source )
+        public DefeatedByVote( Motion motion, Vote vote, Source source )
         {
             this.motion = motion;
             this.vote = vote;
@@ -472,19 +475,19 @@ public class Analyzer2
         }
 
         @Override
-        public Analyzer.Source source()
+        public Source source()
         {
             return source;
         }
 
         @Override
-        public Analyzer.Vote vote()
+        public Vote vote()
         {
             return vote;
         }
 
         @Override
-        public Analyzer.Motion motion()
+        public Motion motion()
         {
             return motion;
         }
@@ -512,19 +515,19 @@ public class Analyzer2
     }
 
 
-    public static class AdoptWithoutVote implements Analyzer.Action
+    public static class AdoptWithoutVote implements Action
     {
-        public final Analyzer.Motion motion;
-        private final Analyzer.Source source;
+        public final Motion motion;
+        private final Source source;
 
-        public AdoptWithoutVote( Analyzer.Motion motion, Analyzer.Source source )
+        public AdoptWithoutVote( Motion motion, Source source )
         {
             this.motion = motion;
             this.source = source;
         }
 
         @Override
-        public Analyzer.Source source()
+        public Source source()
         {
             return source;
         }
@@ -536,13 +539,13 @@ public class Analyzer2
         }
 
         @Override
-        public Analyzer.Vote vote()
+        public Vote vote()
         {
             return null;
         }
 
         @Override
-        public Analyzer.Motion motion()
+        public Motion motion()
         {
             return motion;
         }
@@ -624,14 +627,14 @@ public class Analyzer2
             }
         }
 
-        public Analyzer.Vote toVote()
+        public Vote toVote()
         {
             if(ayes.length != expectedAyes) { throw new RuntimeException( String.format("Expected %d ayes found %d", expectedAyes, ayes.length) ); }
             if(noes.length != expectedNoes) { throw new RuntimeException( String.format("Expected %d noes found %d", expectedNoes, noes.length) ); }
             if(absent.length != expectedAbsent) { throw new RuntimeException( String.format("Expected %d absent found %d", expectedAbsent, absent.length) ); }
             if(absentWithLeave.length != expectedAbsentWithLeave) { throw new RuntimeException( String.format("Expected %d absentWithLeave found %d", expectedAbsentWithLeave, absentWithLeave.length) ); }
             if(present.length != expectedPresent) { throw new RuntimeException( String.format("Expected %d present found %d", expectedPresent, present.length) ); }
-            return new Analyzer.Vote( ayes, noes, absent, absentWithLeave, present );
+            return new Vote( ayes, noes, absent, absentWithLeave, present );
         }
 
         @Override

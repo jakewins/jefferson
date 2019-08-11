@@ -1,11 +1,11 @@
-package valle;
+package jefferson.analyzer;
+
+import jefferson.domain.Vote;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -189,7 +189,7 @@ public class VoteParser
         return true;
     }
 
-    private Analyzer2.VoteContext vote;
+    private Analyzer.VoteContext vote;
     private State state = State.DONE;
 
     // If we fail in parsing, we fall back to trying to pull these names out.
@@ -207,11 +207,11 @@ public class VoteParser
     } );
 
     public void newVote() {
-        vote = new Analyzer2.VoteContext();
+        vote = new Analyzer.VoteContext();
         state = State.SEEK;
     }
 
-    public Analyzer.Vote toVote()
+    public Vote toVote()
     {
         return vote.toVote();
     }

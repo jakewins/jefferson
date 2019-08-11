@@ -1,4 +1,4 @@
-package valle;
+package jefferson.analyzer;
 
 import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.io.RandomAccessFile;
@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
