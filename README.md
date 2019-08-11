@@ -4,6 +4,15 @@ Parses PDF documents of parliamentary procedure following the Jefferson Manual.
 
 This is made for the Missouri House of Representatives.
 
+## Data
+
+You can access parsed sessions [here](https://github.com/jakewins/jefferson/tree/master/output). 
+These are provided AS IS, WITH NO WARRANTY THAT THEY ARE CORRECT ETC. 
+
+These are machine parsed documents, and there may be errors.
+
+You are an adult, use your judgement.
+
 ## Usage
 
 This currently requires a lot of hand holding, you would need to be rather comfortable with a computer to run this on your own.
