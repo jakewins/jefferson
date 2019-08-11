@@ -3,7 +3,9 @@ package jefferson.domain;
 import jefferson.analyzer.Collections;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,6 +36,17 @@ public class Vote
 
     public boolean isRepInvolved( String name ) {
         return voteOfRep( name ) != null;
+    }
+
+    public Map<String,Object> toMap()
+    {
+        Map<String, Object> out = new HashMap<>();
+        out.put( "ayes", ayes );
+        out.put( "noes", noes );
+        out.put( "absent", absent );
+        out.put( "absentWithLeave", absentWithLeave );
+        out.put( "present", present );
+        return out;
     }
 
     public Group voteOfRep( String name ) {

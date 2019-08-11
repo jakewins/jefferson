@@ -1,10 +1,11 @@
 package jefferson.domain;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class Motion
 {
-
     public enum Classification {
         // The current main thing the assembly is considering
         MAIN,
@@ -51,6 +52,17 @@ public class Motion
         this.type = type;
         this.proposal = proposal;
         this.relatesTo = relatesTo;
+    }
+
+    public Map<String,Object> toMap()
+    {
+        HashMap<String,Object> out = new HashMap<>();
+        out.put( "type", type.name() );
+        out.put( "proposal", proposal );
+        if(relatesTo != null) {
+            out.put( "relatesTo", relatesTo.toMap() );
+        }
+        return out;
     }
 
     // Backtrack until we find the main motion
