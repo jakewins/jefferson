@@ -1,5 +1,6 @@
 package jefferson.analyzer;
 
+import jefferson.Sanitizer;
 import jefferson.domain.Vote;
 
 import java.util.ArrayList;

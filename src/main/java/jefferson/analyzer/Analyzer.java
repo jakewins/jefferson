@@ -1,6 +1,7 @@
 package jefferson.analyzer;
 
-import jefferson.analyzer.Sanitizer.Paragraph;
+import jefferson.Sanitizer;
+import jefferson.Sanitizer.Paragraph;
 import jefferson.domain.Action;
 import jefferson.domain.Motion;
 import jefferson.domain.Vote;

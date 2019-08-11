@@ -1,4 +1,6 @@
-package jefferson.analyzer;
+package jefferson;
+
+import jefferson.analyzer.Source;
 
 import java.util.ArrayList;
 import java.util.List;
