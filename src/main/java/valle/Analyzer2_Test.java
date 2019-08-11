@@ -54,7 +54,7 @@ public class Analyzer2_Test
         assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 3 of HCS HB 10", hb10 ), null ), actions.get( 1 ) );
         assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 4 of HCS HB 10", hb10 ), null ), actions.get( 2 ) );
         assertEq( new Analyzer2.AdoptWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 5 of HCS HB 10", hb10 ), null ), actions.get( 3 ) );
-        assertEq( new Analyzer2.DefeatedWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment 6 of HCS HB 10", hb10 ), null ), actions.get( 4 ) );
+        assertEq( new Analyzer2.DefeatedWithoutVote( new Analyzer.Motion( Analyzer.Motion.Type.AMEND, "House Amendment No. 6", hb10 ), null ), actions.get( 4 ) );
 
         assert actions.get( 5 ) instanceof Analyzer2.DefeatedByVote: String.format("Expected DefeatedByVote got %s", actions.get( 5 ));
         assertEq( 40, actions.get( 5 ).vote().ayes.size() );

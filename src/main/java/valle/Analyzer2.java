@@ -209,8 +209,16 @@ public class Analyzer2
                 if(moveToAdopt.matches()) {
                     String rep = moveToAdopt.group( 1 );
                     String bill = moveToAdopt.group( 2 );
-                    System.err.printf("%s moved to adopt %s%n", rep, bill );
-                    ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.ADOPT, "adopt", ctx.activeMotion );
+                    if(bill.contains( "Amendment" ) && ctx.activeMotion.type == Analyzer.Motion.Type.MAIN_MOTION ) {
+                        // We've missed someone offering an amendment
+                        System.err.println("WARN: Missed amendment being offerred, retrofitting");
+                        ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.AMEND, bill, ctx.activeMotion );
+                    } else
+                    {
+                        System.err.printf( "%s moved to adopt %s%n", rep, bill );
+                        ctx.activeMotion = new Analyzer.Motion( Analyzer.Motion.Type.ADOPT, "adopt",
+                                ctx.activeMotion );
+                    }
                     return IN_MOTION;
                 }
 
