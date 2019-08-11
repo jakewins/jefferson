@@ -2,9 +2,12 @@ package valle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class VoteParser
@@ -150,6 +153,9 @@ public class VoteParser
     // up a list of known reps, hopefully, and once we hit a paragraph the split method fails at
     // hopefully we've got enough known reps to use this method.
     private List<String> parseUsingKnownRepMethod( Sanitizer.Paragraph pg ) {
+        if(pg.source.lineNo == 559) {
+            System.out.println("!");
+        }
         List<String> out = new ArrayList<>();
         String content = pg.contents.toLowerCase();
         for ( String knownRep : knownReps ) {
@@ -171,6 +177,9 @@ public class VoteParser
 
     // Check that the list we've parsed seems to actually contain reasonable names
     private static boolean sanityCheck(List<String> reps) {
+        if(reps == null) {
+            return false;
+        }
         for ( String rep : reps )
         {
             if(!rep.toLowerCase().matches( "[a-z’'.-]+( [a-z0-9’'.-]+){0,2}" )) {
@@ -185,7 +194,17 @@ public class VoteParser
 
     // If we fail in parsing, we fall back to trying to pull these names out.
     // To reduce the search space, these are all lowercase
-    private final Set<String> knownReps = new HashSet<>( );
+    private final SortedSet<String> knownReps = new TreeSet<>( (a, b) -> {
+        // Sort by string length, because some of the shorter names may be substrings in
+        // the longer names, so we need to pull out the longer names first.
+        int difference = Comparator.comparingInt( String::length ).reversed().compare( a, b );
+        // We can't return 0, because then treeset thinks the strings are equal and deletes one
+        if(difference != 0) {
+            return difference;
+        }
+        // If they are the same length, sort alphabetically
+        return a.compareTo( b );
+    } );
 
     public void newVote() {
         vote = new Analyzer2.VoteContext();

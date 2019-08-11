@@ -59,6 +59,17 @@ public class Analyzer2
                     return NEXT_MOTION;
                 }
 
+                Matcher placedOnInformalCalendar = Patterns.placedOnInformalCalendar.matcher( pg.contents );
+                if(placedOnInformalCalendar.matches()) {
+                    System.err.printf("%s was placed on informal calendar%n", ctx.activeMotion.proposal);
+                    if(ctx.activeMotion != ctx.mainMotion) {
+                        throw new RuntimeException( String.format("Can non-main motions be put on calendar? At %s", pg.toString() ));
+                    }
+                    ctx.activeMotion = null;
+                    ctx.mainMotion = null;
+                    return NEXT_MOTION;
+                }
+
                 Matcher referredToCommittee = Patterns.referredToCommittee.matcher( pg.contents );
                 if(referredToCommittee.matches()) {
                     System.err.printf("%s was referred to committee%n", ctx.activeMotion);
@@ -638,6 +649,9 @@ public class Analyzer2
 
         // HCS HB 10, as amended, was laid over.
         static Pattern laidOver = Pattern.compile("\\s*([^,]+),?.*was laid over\\.?\\s*");
+
+        // HCS HB 2001 was placed on the Informal Calendar.
+        static Pattern placedOnInformalCalendar = Pattern.compile("\\s*([^,]+),?.*was\\s+placed\\s+on\\s+the\\s+Informal\\s+Calendar\\.?\\s*");
 
         // SB 514, as amended, was referred to the Committee on Fiscal Review pursuant to  Rule 53.
         static Pattern referredToCommittee = Pattern.compile("\\s*([^,]+), (.*) was referred to (.*) pursuant to.*");
